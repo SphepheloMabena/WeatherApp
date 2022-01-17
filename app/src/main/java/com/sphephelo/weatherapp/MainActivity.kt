@@ -11,14 +11,12 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.ActionBar
 import android.app.Activity
-import android.app.PendingIntent.getActivity
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.Drawable
 import android.location.Location
 import android.location.LocationListener
 
@@ -27,22 +25,14 @@ import android.os.Build
 
 import android.provider.Settings
 import android.util.Log
-import android.view.Menu
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.navigation.NavigationView
-import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
-import androidx.navigation.ui.setupWithNavController
-import androidx.drawerlayout.widget.DrawerLayout
 
-import androidx.appcompat.widget.Toolbar
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -74,17 +64,20 @@ var latitude:Double = 0.0;
 var longitude:Double=0.0;
 
 
+
 //Code by Sphephelo Mabena
 class MainActivity : AppCompatActivity() {
 
-    var text = "Hellow"
 
+
+    var text = "Hellow"
+    //declaring the valuable
     lateinit var cur_temp: TextView
-    lateinit var current_temperature: TextView
-    lateinit var max_temp: TextView
-    lateinit var min_temp: TextView
-    lateinit var description: TextView
-    lateinit var background: ConstraintLayout ;
+    lateinit var current_temperature: TextView//current temperature
+    lateinit var max_temp: TextView//maximum temperature
+    lateinit var min_temp: TextView//minimum temperature for the location
+    lateinit var description: TextView//describes the weather
+    lateinit var background: ConstraintLayout ;//this is the weather background
 
     var weekDays: ArrayList<String> = ArrayList<String>();
     var icons: ArrayList<Int> = ArrayList<Int>();
@@ -93,18 +86,47 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var reycleView: RecyclerView;
 
-    var minTemp: ArrayList<Double> = ArrayList<Double>(5)
+    var minTemp: ArrayList<Double> = ArrayList<Double>(5)//array of the minimum temperatires recieved
     var maxTemp: ArrayList<Int> = ArrayList<Int>(5)
     var weatherDescription: ArrayList<String> = ArrayList<String>(5)
 
 
     private lateinit var appBarConfiguration: AppBarConfiguration
-    lateinit var locationManager: LocationManager;
+    lateinit var locationManager: LocationManager;//we need the users location
     var hasGPS = false;
     var hasNetwork = false;
 
+    private fun checkPermission(permission: String, requestCode: Int) {
+
+        if (ContextCompat.checkSelfPermission(this@MainActivity, permission) == PackageManager.PERMISSION_DENIED) {
+
+            // Requesting the permission
+            ActivityCompat.requestPermissions(this@MainActivity, arrayOf(permission), requestCode)
+        } else {
+            Toast.makeText(this@MainActivity, "Permission already granted", Toast.LENGTH_SHORT).show()
+            locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0F,OurlocationListener() );
+
+
+            /*val localGpsLocation: Location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDERthis) as Location
+            if (localGpsLocation != null)
+                println("Location : $localGpsLocation")
+            latitude = localGpsLocation.latitude
+            longitude = localGpsLocation.longitude;
+
+            println("Latitude up: ${localGpsLocation.latitude}");
+            println("Longitude up: ${localGpsLocation.longitude}");*/
+        }
+    }
+
     //Code by Sphephelo Mabena
     private fun getLocation() {
+        //I used Location Manager instead of the new fused location provider
+        //because Fused Location Provider is depedent on Google Play Services
+        //Hence it will not be compatible with
+        // Android Devices without Google Play Services (e.g Huawei )
+        //Meaning the App wouldn't have worked properly on Huawei Devices
+        //if we had used Fused Location Provider
         msg = "Active"
 
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
@@ -112,41 +134,51 @@ class MainActivity : AppCompatActivity() {
         hasNetwork = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
         if (hasGPS || hasNetwork) {
 
-            if (hasGPS || hasNetwork) {
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    // TODO: Consider calling
-                    //    ActivityCompat#requestPermissions
-                    // here to request the missing permissions, and then overriding
-                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                    //                                          int[] grantResults)
-                    // to handle the case where the user grants the permission. See the documentation
-                    // for ActivityCompat#requestPermissions for more details.
-                    return
-                }
-                //not neccessary
-                /*locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0F, object : LocationListener {
-                    override fun onLocationChanged(p0: Location) {
-                        if (p0 != null) {
-                            println("Latitude: ${p0.latitude}");
 
-                        }
-                    }
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                val permissions:Array<String> =arrayOf(Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION);
+                checkPermission(Manifest.permission.ACCESS_FINE_LOCATION,1);//check for fine location
+                checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION,1)
+                ;
 
-                })*/
-
-                val localGpsLocation: Location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER) as Location
-                if (localGpsLocation != null)
-                    println("Location : $localGpsLocation")
-                latitude = localGpsLocation.latitude
-                longitude = localGpsLocation.longitude;
-
-                println("Latitude up: ${localGpsLocation.latitude}");
-                println("Longitude up: ${localGpsLocation.longitude}");
             }
+            else{
+//                    val localGpsLocation: Location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER) as Location
+//                    if (localGpsLocation != null)
+//                        println("Location : $localGpsLocation")
+//                    latitude = localGpsLocation.latitude
+//                    longitude = localGpsLocation.longitude;
+//
+//                    println("Latitude up: ${localGpsLocation.latitude}");
+//                    println("Longitude up: ${localGpsLocation.longitude}");
+
+            }
+            //not neccessary
+            /*locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0F, object : LocationListener {
+                override fun onLocationChanged(p0: Location) {
+                    if (p0 != null) {
+                        println("Latitude: ${p0.latitude}");
+
+                    }
+                }
+
+            })*/
+
+
 
 
         } else {
-            startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            //if Location is disabled
+            //Location Off Screen will be opened
+            val intent:Intent=Intent(this,LocationOff::class.java);
+            startActivity(intent);
         }
     }
 
@@ -157,24 +189,28 @@ class MainActivity : AppCompatActivity() {
         when (requestCode) {
             1 -> {
                 if (grantResults.isNotEmpty() && grantResults[0] ==
-                        PackageManager.PERMISSION_GRANTED) {
+                    PackageManager.PERMISSION_GRANTED) {
                     if ((ContextCompat.checkSelfPermission(this@MainActivity,
-                                    Manifest.permission.ACCESS_FINE_LOCATION) ===
-                                    PackageManager.PERMISSION_GRANTED)) {
+                            Manifest.permission.ACCESS_FINE_LOCATION) ===
+                                PackageManager.PERMISSION_GRANTED)) {
                         Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
                         getLocation();
                     }
                 } else {
                     Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show()
+                    //if Permission is denied
+                    //Open LocationPermission Screen will be opened
+                    //this screen will prompt the user to grant permission
+                    val intent:Intent=Intent(this,LocationPermission::class.java);
+                    startActivity(intent);
                 }
                 return
             }
         }
     }
-
+    //gets the focast data from the api
     @RequiresApi(Build.VERSION_CODES.O)
-    fun startForecast(urlForcast:String)
-    {
+    fun startForecast(urlForcast:String): Boolean {
         weekDays = ArrayList<String>();
         icons = ArrayList<Int>();
         var currentDay= LocalDate.now().dayOfWeek.value
@@ -183,8 +219,8 @@ class MainActivity : AppCompatActivity() {
         val weather = WeatherInstance.weatherInterface.WeatherInfom(urlForcast);
         weather.enqueue(object : Callback<WeatherInfo> {
             override fun onResponse(
-                    call: Call<WeatherInfo>,
-                    response: Response<WeatherInfo>
+                call: Call<WeatherInfo>,
+                response: Response<WeatherInfo>
             ) {
                 val weatherInfo: WeatherInfo? = response.body();
                 if (weatherInfo != null) {
@@ -282,6 +318,13 @@ class MainActivity : AppCompatActivity() {
 
 
                     //println("Weather info $weatherInfo")
+
+                }
+                else{
+                    val intent:Intent=Intent(this@MainActivity,WeatherNa::class.java);
+                    startActivity(intent);
+
+
                 }
 
             }
@@ -293,12 +336,21 @@ class MainActivity : AppCompatActivity() {
             }
 
         })
+        if(urlForcast =="")
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
 
     }
 
     fun getCurrentWeather(urlCurrent:String)
     {
         var minmum_temp: Int = 0;
+
         var maximum_temp: Int = 0;
         var current_temp: Int = 0;
         var current_description: String = "";
@@ -360,10 +412,10 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     println("Minimum temperature : $minmum_temp")
-                    cur_temp.text = current_temp.toString();
-                    current_temperature.text = current_temp.toString();
-                    max_temp.text = maximum_temp.toString();
-                    min_temp.text = minmum_temp.toString();
+                    cur_temp.text = "${current_temp.toString()} \u2103"
+                    current_temperature.text = "${current_temp.toString()} \u2103";
+                    max_temp.text = "${maximum_temp.toString() } \u2103";
+                    min_temp.text = "${minmum_temp.toString()} \u2103";
                     description.text = current_description;
 
                 }
@@ -386,26 +438,20 @@ class MainActivity : AppCompatActivity() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
-        /*super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)*/
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
         getLocation();
 
+        cur_temp= findViewById(R.id.cur_temp);
+        current_temperature= findViewById(R.id.current_temp);
+        max_temp= findViewById(R.id.max_temp);
+        min_temp= findViewById(R.id.min_temp);
+        description = findViewById(R.id.description);
+        background = findViewById(R.id.background)
 
 
 
-        //lets get location
-        if (ContextCompat.checkSelfPermission(this@MainActivity,
-                        Manifest.permission.ACCESS_FINE_LOCATION) !==
-                PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this@MainActivity,
-                            Manifest.permission.ACCESS_FINE_LOCATION)) {
-                ActivityCompat.requestPermissions(this@MainActivity,
-                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1)
-            } else {
-                ActivityCompat.requestPermissions(this@MainActivity,
-                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1)
-            }
-        }
+
 
 
 
@@ -419,15 +465,9 @@ class MainActivity : AppCompatActivity() {
 
 
 
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
 
-        cur_temp= findViewById(R.id.cur_temp);
-        current_temperature= findViewById(R.id.current_temp);
-         max_temp= findViewById(R.id.max_temp);
-        min_temp= findViewById(R.id.min_temp);
-         description = findViewById(R.id.description);
-         background = findViewById(R.id.background)
+
+
 
 //Code by Sphephelo Mabena
         val fab: FloatingActionButton = findViewById(R.id.fab)
@@ -487,7 +527,7 @@ class MainActivity : AppCompatActivity() {
                 override fun onPlaceSelected(place: Place) {
                     // TODO: Get info about the selected place.
                     Log.i(ContentValues.TAG, "Place: ${place.name}, ${place.id}")
-                    println("Latitude: ${place.latLng.latitude}")
+                   // println("Latitude: ${place.latLng.latitude}")
 
 
 
@@ -526,6 +566,7 @@ class MainActivity : AppCompatActivity() {
     }
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode == 1) {
             when (resultCode) {
@@ -553,7 +594,7 @@ class MainActivity : AppCompatActivity() {
             }
             return
         }
-       //super.onActivityResult(requestCode, resultCode, data)
+       super.onActivityResult(requestCode, resultCode, data)
     }
 }
 

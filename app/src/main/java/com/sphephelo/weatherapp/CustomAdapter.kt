@@ -48,7 +48,7 @@ class CustomAdapter(val maxTemp:ArrayList<Int>,val weekDays:ArrayList<String>,va
         //viewHolder.textView.text = dataSet[position]
 
         viewHolder.weekday.text = weekDays[position];
-        viewHolder.temp.text=maxTemp[position].toString();
+        viewHolder.temp.text="${maxTemp[position].toString()} \u2103";
         println("Icons $icons")
         viewHolder.icon.setBackgroundResource(icons[position])
     }
